@@ -4,33 +4,37 @@ import os
 
 class Trainer():
     def __init__(self, path, name):
-        self.cascadeClassifier = cv.CascadeClassifier('Assets/haarcascade_frontalface_default.xml')
+        self.cascadeClassifier = cv.CascadeClassifier('assets/lib/haarcascade_frontalface_alt.xml')
         self.faceRecognizer = cv.face.EigenFaceRecognizer_create()
         self.path = path
         self.name = name
-        self.dataset = path + 'images/'
+        self.count = 1
+        self.dataset = os.path.join(path, 'images/')
         self.cap = cv.VideoCapture(0)
         
         if not os.path.exists(self.dataset):
             os.makedirs(self.dataset)
 
     def captureDataset(self, limit: int, wh: int):
-        i = 1
         while True:
             ret, frame = self.cap.read()
             frame = cv.flip(frame, 1)
+            f = frame.copy()
             gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
             rostros = self.cascadeClassifier.detectMultiScale(gray, 2.3, 3)
             for(x, y, w, h) in rostros:
-                frame = cv.rectangle(frame, (x,y), (x+w, y+h), (255, 255, 255), 2)
+                f = cv.rectangle(f, (x,y), (x+w, y+h), (255, 255, 255), 2)
                 face = frame[y:y+h, x:x+w]
                 face = cv.resize(face,  (wh, wh), interpolation=cv.INTER_AREA)
                 if face.any():
-                    if not i > limit:
-                        cv.imwrite(self.dataset + str(i) + '.jpg', face)
-                        i=i+1
+                    if not self.count > limit:
+                        cv.imwrite(self.dataset + str(self.count) + '.jpg', face)
+                        self.count=self.count+1
 
-            return frame
+            return f
+
+    def getCount(self):
+        return self.count
     
     def endCapture(self):
         self.cap.release()
@@ -42,26 +46,26 @@ class Trainer():
             label = 0 
             for image in os.listdir(self.dataset):
                 labels.append(label)
-                facesData.append(cv.imread(self.dataset+image,0))
+                facesData.append(cv.imread(os.path.join(self.dataset, image),0))
                 label = label + 1
             try:
-                faceRecognizer = cv.face.EigenFaceRecognizer_create()
-                faceRecognizer.train(facesData, np.array(labels))
-                faceRecognizer.write(self.path + self.name + '.xml')
+                self.faceRecognizer.train(facesData, np.array(labels))
+                self.faceRecognizer.write(os.path.join(self.path, f"{self.name}.xml"))
             except:
                 raise Exception('Ocurrio un error al entrenar el modelo')
         else:
             raise Exception('No hay imagenes en el dataset')
     
-    def deleteAllImages(self):
+    def deleteImages(self):
         try:
-            if os.listdir(self.dataset) == []:
-                raise Exception('No hay imagenes en el dataset')
-            elif not os.exists(self.dataset):
-                raise Exception('No existe la carpeta de imagenes')
+            if not os.path.exists(self.dataset):
+                raise Exception('No existe la carpeta de imágenes')
+            
+            elif not os.listdir(self.dataset):
+                raise Exception('No hay imágenes en el dataset')
+            
             else:
-                for image in os.listdir(self.dataset):
-                    os.remove(self.dataset + image)
-                os.remove(self.path)
-        except:
-            raise Exception('Ocurrio un error al eliminar las imagenes')
+                os.rmdir(self.dataset)
+
+        except Exception as e:
+            raise Exception(f'Ocurrio un error al eliminar las imagenes: {e}')
