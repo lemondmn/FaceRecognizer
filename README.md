@@ -13,7 +13,8 @@ python -m venv venv
 venv\Scripts\activate
 ```
 
-- Install latest OpenCV Contrib release: `pip install opencv-contrib-python`
+- Install the following dependencies inside the virtual enviroment:
 
-- Install latest PySimpleGUI release: 
-`pip install pysimplegui`
+OpenCV Contrib: `pip install opencv-contrib-python`
+Eel: `pip install eel[jinja2]`
+Pillow: `pip install Pillow`
