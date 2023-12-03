@@ -3,3 +3,7 @@ test
 venv
 
 */__pycache__
+*/venv
+
+Predictor/eigenface.xml
+Trainer/Dataset/*
