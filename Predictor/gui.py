@@ -1,12 +1,19 @@
 import PySimpleGUI as sg
-import os
-from recognizer import HaarRecognizer, YoloRecognizer
+import recognizer as rec
 
 class RecognizerSetup:
     def __init__(self) -> None:
+        sg.theme('LightPurple')
+        sg.set_options(font=('Helvetica', 14))
+
+        self.combo_values = ['Algoritmo YOLOv3 (Personas)',
+                             'Eigenface (Rostros)',
+                             'Eigenface + YOLOv3 (Rostros + Personas)'
+                             'Haar Cascade Classifier (Caras, cuerpo)'
+                            ]
         self.layout = [
             [sg.Text('Configuración')],
-            [sg.Text('Modo\t\t'), sg.Combo(['Haar', 'Yolo'], key='mode', default_value='Yolo', expand_x=True)],
+            [sg.Text('Modo\t\t'), sg.Combo(self.combo_values, key='mode', expand_x=True, default_value=self.combo_values[0])],
             [sg.Text('Dirección IP\t'), sg.InputText(key='ip', expand_x=True)],
             [sg.Button('Cerrar', expand_x=True), sg.Button('Iniciar', expand_x=True)],
         ]
@@ -18,39 +25,56 @@ class RecognizerSetup:
             if event == sg.WIN_CLOSED or event == 'Cerrar':
                 break
             elif event == 'Iniciar':
-                path = values['mode']
+                mode = self.combo_values.index(values['mode'])
                 ip = values['ip']
-                if not os.path.exists(path):
-                    sg.Popup('Error', 'El directorio no existe')                    
-                else:
-                    break
+                break
         window.close()
-        return path, ip
+        return mode, ip
 
 class MainUI:
     def __init__(self, mode, ip) -> None:
-        if ip == '': ip = None
+        sg.theme('LightPurple')
+        sg.set_options(font=('Helvetica', 14))
+        self.slider = [[sg.Text('Sensibilidad')],[sg.Slider(range=(5000, 15000), default_value=9000, resolution=500, orientation='h', key='threshold', expand_x=True)]]
+        self.title = None
 
-        if mode == 'Haar':
-            self.recognizer = HaarRecognizer(ip)
-        elif mode == 'Yolo':
-            self.recognizer = YoloRecognizer(ip)
-        else:
-            raise Exception('Modo no soportado')
+        if ip == '': ip = None
 
         self.layout = [
             [sg.Image(filename='', key='image')],
             [sg.Button('Cerrar', expand_x=True)],
         ]
+
+        if mode == 0:
+            self.recognizer = rec.YoloRecognizer(ip)
+            self.title = 'YOLOv3 (Personas)'
+        elif mode == 1:
+            self.recognizer = rec.EigenRecognizer(ip)
+            self.title = 'Eigenface (Rostros)'
+            self.layout.append(self.slider)
+        elif mode == 2:
+            self.recognizer = rec.EigenYoloRecognizer(ip)
+            self.title = 'Eigenface + YOLOv3 (Rostros + Personas)'
+            self.layout.append(self.slider)
+        elif mode == 3:
+            self.recognizer = rec.HaarRecognizer(ip)
+            self.title = 'Haar Cascade Classifier (Caras, cuerpo)'
+        else:
+            raise Exception('Modo no soportado')
+        
+        self.mode = mode
     
     def run(self):
-        window = sg.Window('Reconocimiento Facial', self.layout)
+        window = sg.Window(self.title, self.layout)
         while True:
             event, values = window.read(timeout=20)
             if event == sg.WIN_CLOSED or event == 'Cerrar':
                 break
             else:
-                imgbytes = self.recognizer.getFrame()
+                if self.mode == 2 or self.mode == 3:
+                    imgbytes = self.recognizer.getFrame(values['threshold'])
+                else:
+                    imgbytes = self.recognizer.getFrame()
                 window['image'].update(data=imgbytes)
     
         self.recognizer.destroy()
