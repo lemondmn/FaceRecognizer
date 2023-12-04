@@ -8,7 +8,7 @@ class RecognizerSetup:
 
         self.combo_values = ['Algoritmo YOLOv3 (Personas)',
                              'Eigenface (Rostros)',
-                             'Eigenface + YOLOv3 (Rostros + Personas)'
+                             'Eigenface + YOLOv3 (Rostros + Personas)',
                              'Haar Cascade Classifier (Caras, cuerpo)'
                             ]
         self.layout = [
@@ -35,19 +35,19 @@ class MainUI:
     def __init__(self, mode, ip) -> None:
         sg.theme('LightPurple')
         sg.set_options(font=('Helvetica', 14))
-        self.slider = [[sg.Text('Sensibilidad')],[sg.Slider(range=(5000, 15000), default_value=9000, resolution=500, orientation='h', key='threshold', expand_x=True)]]
+        self.slider = [[sg.Text('Sensibilidad')],[sg.Slider(range=(5000, 15000), default_value=9000, resolution=500, orientation='h', key='threshold', expand_x=True)], [sg.Button('Cerrar', expand_x=True)]]
         self.title = None
 
         if ip == '': ip = None
 
         self.layout = [
             [sg.Image(filename='', key='image')],
-            [sg.Button('Cerrar', expand_x=True)],
         ]
 
         if mode == 0:
             self.recognizer = rec.YoloRecognizer(ip)
             self.title = 'YOLOv3 (Personas)'
+            self.layout.append([sg.Button('Cerrar', expand_x=True)])
         elif mode == 1:
             self.recognizer = rec.EigenRecognizer(ip)
             self.title = 'Eigenface (Rostros)'
@@ -59,6 +59,7 @@ class MainUI:
         elif mode == 3:
             self.recognizer = rec.HaarRecognizer(ip)
             self.title = 'Haar Cascade Classifier (Caras, cuerpo)'
+            self.layout.append([sg.Button('Cerrar', expand_x=True)])
         else:
             raise Exception('Modo no soportado')
         
@@ -71,7 +72,7 @@ class MainUI:
             if event == sg.WIN_CLOSED or event == 'Cerrar':
                 break
             else:
-                if self.mode == 2 or self.mode == 3:
+                if self.mode == 1 or self.mode == 2:
                     imgbytes = self.recognizer.getFrame(values['threshold'])
                 else:
                     imgbytes = self.recognizer.getFrame()
