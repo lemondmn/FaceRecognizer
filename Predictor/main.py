@@ -2,8 +2,11 @@ from gui import RecognizerSetup, MainUI
 
 if __name__ == '__main__':
     setup = RecognizerSetup()
-    path, ip = setup.run()
-    if not path == None:
-        window = MainUI(path, ip)
+    mode, ip = setup.run()
+    window = MainUI(mode, ip)
+    try:
         window.run()
-    
+    except Exception as e:
+        print(e)
+        window.recognizer.destroy()
+        window.close()

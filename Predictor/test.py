@@ -1,43 +1,7 @@
 import cv2 as cv
 import numpy as np
-import requests
 
-class HaarRecognizer:
-    def __init__(self, ip) -> None:
-        self.path = 'eigenface.xml'
-        self.ip = ip
-        self.face = cv.CascadeClassifier('haarcascade_frontalface_alt.xml')
-
-        if not self.ip == None:
-            self.cap = cv.VideoCapture(f'http://{self.ip}:81/stream')
-            print(f'http://{self.ip}:81/stream')
-        else:
-            self.cap = cv.VideoCapture(0)
-
-        self.recognizer = cv.face.EigenFaceRecognizer_create()
-        self.recognizer.read(self.path)
-    
-    def getFrame(self):
-        ret, frame = self.cap.read()
-        frame = cv.flip(frame, 1)
-        if ret == False: raise Exception('No se pudo obtener el frame')
-        gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-        cpGray = gray.copy()
-        rostros = self.face.detectMultiScale(gray, 1.3, 3)
-        for(x, y, w, h) in rostros:
-            frame2 = cpGray[y:y+h, x:x+w]
-            frame2 = cv.resize(frame2,  (200,200), interpolation=cv.INTER_CUBIC)
-            result = self.recognizer.predict(frame2)
-            cv.putText(frame, '{}'.format(result), (x,y-20), 1,3.3, (255,255,0), 1, cv.LINE_AA)
-
-        imgbytes = cv.imencode('.png', frame)[1].tobytes()
-        return imgbytes
-    
-    def destroy(self):
-        self.cap.release()
-        cv.destroyAllWindows()
-
-class YoloRecognizer:
+class ObjectDetector:
     def __init__(self, ip):
         if ip == '': ip = None
         self.url = ip
@@ -59,11 +23,11 @@ class YoloRecognizer:
         self.net = cv.dnn.readNetFromDarknet(self.model_config, self.model_weights)
         self.net.setPreferableBackend(cv.dnn.DNN_BACKEND_OPENCV)
         self.net.setPreferableTarget(cv.dnn.DNN_TARGET_CPU)
-    
+
     def handleAlert(self):
         print('Alerta')
         
-    def searchObject(self, outputs, im):
+    def find_person(self, outputs, im):
         hT, wT, cT = im.shape
         bbox = []
         class_ids = []
@@ -109,11 +73,12 @@ class YoloRecognizer:
         output_names = [layer_names[i - 1] for i in self.net.getUnconnectedOutLayers()]
 
         outputs = self.net.forward(output_names)
-        self.searchObject(outputs, frame)
+        self.find_person(outputs, frame)
         
         imgbytes = cv.imencode('.png', frame)[1].tobytes()
         return imgbytes
-    
-    def destroy(self):
-        self.cap.release()
-        cv.destroyAllWindows()
+
+if __name__ == '__main__':
+    detector = ObjectDetector('')
+    while True:
+        detector.getFrame()
