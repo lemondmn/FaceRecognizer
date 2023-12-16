@@ -3,13 +3,13 @@ import numpy as np
 import os
 
 class Trainer():
-    def __init__(self, path, name):
+    def __init__(self, path: str, name: str):
         self.cascadeClassifier = cv.CascadeClassifier('assets/lib/haarcascade_frontalface_alt.xml')
         self.faceRecognizer = cv.face.EigenFaceRecognizer_create()
-        self.path = path
+        self.path = path + '/'
         self.name = name
         self.count = 1
-        self.dataset = os.path.join(path, 'images/')
+        self.dataset = os.path.join(path, f"{self.name}/")
         self.cap = cv.VideoCapture(0)
         
         if not os.path.exists(self.dataset):
@@ -30,8 +30,22 @@ class Trainer():
                     if not self.count > limit:
                         cv.imwrite(self.dataset + str(self.count) + '.jpg', face)
                         self.count=self.count+1
+            
+            f_bytes = cv.imencode('.png', f)[1].tobytes()
 
-            return f
+            return f_bytes
+        
+    def capture(self):
+        ret, frame = self.cap.read()
+        frame = cv.flip(frame, 1)
+        gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+        rostros = self.cascadeClassifier.detectMultiScale(gray, 2.3, 3)
+        for(x, y, w, h) in rostros:
+            f = cv.rectangle(f, (x,y), (x+w, y+h), (255, 255, 255), 2)
+        
+        f_bytes = cv.imencode('.png', f)[1].tobytes()
+
+        return f_bytes
 
     def getCount(self):
         return self.count
